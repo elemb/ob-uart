@@ -118,6 +118,38 @@ Argument PARAMS UART communication parameters."
 	    (fill-region (point-min) (point-max)))
 	(buffer-string)))))
 
+;; Add this helper function for cross-platform port detection
+(defun ob-uart-detect-default-port ()
+  "Detect default serial port based on operating system."
+  (cond
+   ((eq system-type 'darwin)
+    ;; macOS - look for USB serial devices
+    (or (car (directory-files "/dev" nil "cu\\.usbmodem.*"))
+        (car (directory-files "/dev" nil "cu\\.usbserial.*"))
+        "/dev/cu.usbmodem"))
+   ((eq system-type 'gnu/linux)
+    ;; Linux
+    (or (car (directory-files "/dev" nil "ttyUSB.*"))
+        (car (directory-files "/dev" nil "ttyACM.*"))
+        "/dev/ttyUSB0"))
+   (t
+    ;; Default fallback
+    "/dev/ttyUSB0")))
+
+;; Update the default header args to use auto-detection
+(defvar org-babel-default-header-args:uart
+  `((:ienc . "raw")
+    (:oenc . "raw")
+    (:port . ,(ob-uart-detect-default-port))
+    (:speed . 9600)
+    (:bytesize . 8)
+    (:parity . nil)
+    (:stopbits . 1)
+    (:flowcontrol . nil)
+    (:timeout . 1)
+    (:lineend . "\n"))
+  "Default arguments for evaluating a UART block.")
+
 (defun ob-uart-listen-filter (proc string)
   "Filter to process response.
 Argument PROC process.
