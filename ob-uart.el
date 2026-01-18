@@ -3,6 +3,7 @@
 ;; Copyright (C) Andreas Müller
 
 ;; Author: Andreas Müller
+;; Revision Author: elemb
 ;; Keywords: tools, comm, org-mode, UART, literate programming, reproducible development
 ;; Homepage: https://www.0x7.ch
 ;; Version: 0.0.1
