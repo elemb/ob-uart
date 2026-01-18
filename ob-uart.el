@@ -67,29 +67,30 @@ This function is called by `org-babel-execute-src-block'
 Argument BODY content to send.
 Argument PARAMS UART communication parameters."
   (message "executing UART source code block")
-  (let* ((ienc (cdr (assoc :ienc params)))
-	 (oenc (cdr (assoc :oenc params)))
-	 (port (cdr (assoc :port params)))
-	 (speed (cdr (assoc :speed params)))
-	 (bytesize (cdr (assoc :bytesize params)))
-	 (parity (cdr (assoc :parity params)))
-	 (stopbits (cdr (assoc :stopbits params)))
-	 (flowcontrol (cdr (assoc :flowcontrol params)))
-	 (timeout (cdr (assoc :timeout params)))
-	 (lineend (cdr (assoc :lineend params)))
-	 (process (format "ob-uart-%s" port))
-	 (process-buffer (format "*ob-uart-%s*" port)))
+(let* ((ienc (cdr (assoc :ienc params)))
+       (oenc (cdr (assoc :oenc params)))
+       (port (cdr (assoc :port params)))
+       (speed (string-to-number (cdr (assoc :speed params))))
+       (bytesize (string-to-number (cdr (assoc :bytesize params))))
+       (stopbits (string-to-number (cdr (assoc :stopbits params))))
+       (timeout (string-to-number (cdr (assoc :timeout params))))
+       (parity (cdr (assoc :parity params)))
+       (flowcontrol (cdr (assoc :flowcontrol params)))
+       (lineend (cdr (assoc :lineend params)))
+       (process (format "ob-uart-%s" port))
+       (process-buffer (format "*ob-uart-%s*" port)))
 
-    (make-serial-process
-     :name process
-     :buffer process-buffer
-     :port port
-     :speed speed
-     :bytesize bytesize
-     :parity parity
-     :stopbits stopbits
-     :flowcontrol flowcontrol
-     :filter 'ob-uart-listen-filter)
+
+(make-serial-process
+ :name process
+ :buffer process-buffer
+ :port port
+ :speed speed
+ :bytesize bytesize
+ :parity parity
+ :stopbits stopbits
+ :flowcontrol flowcontrol
+ :filter #'ob-uart-listen-filter)
 
     (when (string= "hex" ienc)
 	(setq body (mapconcat (lambda (x) (byte-to-string (string-to-number x 16))) (split-string body) "")))
