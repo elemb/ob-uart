@@ -82,7 +82,6 @@ Argument PARAMS UART communication parameters."
     (make-serial-process
      :name process
      :buffer process-buffer
-     :speed speed
      :port port
      :speed speed
      :bytesize bytesize
