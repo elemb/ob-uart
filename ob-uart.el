@@ -32,6 +32,7 @@
 ;;
 
 ;;; Code:
+(require 'cl-lib)
 (require 'ob)
 (require 'ob-ref)
 (require 'ob-comint)
@@ -46,9 +47,6 @@
   :package-version '(ob-uart . "0.0.1")
   :group 'ob-uart
   :type 'boolean)
-
-(require 'cl-lib)
-(require 'ob)
 
 (defvar org-babel-default-header-args:uart
   '((:port . "/dev/ttyUSB0")
