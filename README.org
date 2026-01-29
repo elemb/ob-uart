@@ -29,13 +29,13 @@ If you find this useful, feel free to fork and contribute!
 
 * Installation
 
-** Doom Emacs (recommended – this is how it was actually tested)
+** Doom Emacs (recommended – this is how it was tested)
 
 1. In your =~/.doom.d/packages.el= (or =~/doom.d/packages.el=), add:
 
    #+begin_src emacs-lisp
    (package! ob-cereal
-     :recipe (:host github :repo "YOURUSERNAME/ob-cereal" :files ("ob-cereal.el")))
+     :recipe (:host github :repo "elemb/ob-cereal" :files ("ob-cereal.el")))
    #+end_src
 
    (replace YOURUSERNAME with your GitHub name after you fork & push the fixed version)
@@ -43,8 +43,8 @@ If you find this useful, feel free to fork and contribute!
 2. Run in terminal:
 
    #+begin_src sh
-   doom sync
-   doom build    # optional but recommended after first install
+   doom sync -u
+   doom sync --rebuild    # optional but recommended after first install
    #+end_src
 
 3. Restart Emacs completely (not just =doom/reload=).
