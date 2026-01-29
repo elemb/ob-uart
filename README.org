@@ -87,24 +87,17 @@ Find your port first:
 
 Basic block:
 
-#+BEGIN_SRC cereal :port /dev/cu.usbmodem31401 :speed 115200 :bytesize 8 :parity none :stopbits 1 :flowcontrol none
-armv6m words-in
-#+END_SRC
-
-You should see something like:
-
-#+RESULTS:
-: armv6m words-in
-: ]code               code[               armv6m-instr        armv6m-internal …
-:  ok
-
-Common minimal header (copy-paste friendly):
-
 #+BEGIN_SRC cereal :port /dev/cu.usbmodem31401 :speed 115200 :parity none :flowcontrol none
 : STAR ( -- ) 42 EMIT ;
 : STARS ( n -- ) 0 DO STAR LOOP ;
 7 stars
 #+END_SRC
+
+** RESULTS
+: : STAR ( -- ) 42 EMIT ;  ok
+: : STARS ( n -- ) 0 DO STAR LOOP ;  ok
+: 7 stars ******* ok
+
 
 * Recommended header args
 
@@ -125,14 +118,6 @@ Important: always give =:flowcontrol= a value (usually =none=). Leaving it blank
 
 * Troubleshooting / Gotchas
 
-- **Still getting =wrong-type-argument: stringp, 115200= ?**
-  - Old byte-compiled version is cached.
-  - Fix: =rm -rf ~/.emacs.d/.local/straight/build-*/ob-cereal= then =doom sync= again + full Emacs restart.
-
-- **No output or garbage (^F ^M etc.)**
-  - The current version strips most control chars automatically.
-  - If you still see junk → enable debug: =(setq ob-cereal-debug t)= and look at =*Messages*=.
-
 - **Port not found**
   - macOS: =ls /dev/cu.*=
   - Linux: =ls /dev/ttyUSB* /dev/ttyACM*=
@@ -141,7 +126,7 @@ Important: always give =:flowcontrol= a value (usually =none=). Leaving it blank
 - **Doom sync does nothing**
   - Make sure the repo URL in packages.el is correct and public (or you have auth set up).
 
-* Bus Pirate example (still useful)
+* Bus Pirate example (still useful from ob-uart.el)
 
 (kept from original README – works with the fixed version)
 
@@ -162,8 +147,6 @@ Important: always give =:flowcontrol= a value (usually =none=). Leaving it blank
 You can now:
 
 - Keep command sequences + explanations + results in one document
-- Tangle to .fs / .forth files if needed
-- Use =:noweb= to compose definitions across blocks
 - Version control your entire hardware conversation
 
 Enjoy — and happy hacking!
