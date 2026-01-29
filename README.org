@@ -42,7 +42,7 @@ If you find this useful, feel free to fork and contribute!
 
    #+begin_src sh
    doom sync -u
-   doom sync --rebuild    # optional but recommended after first install
+   doom sync --rebuild
    #+end_src
 
 3. Restart Emacs completely (not just =doom/reload=).
