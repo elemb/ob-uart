@@ -2,7 +2,7 @@
 
 ;; Copyright (C) Andreas Müller
 
-;; Author: Andreas Müller
+;; Original Author and Idea and 100% credit to: Andreas Müller
 ;; Revision Author: elemb
 ;; Keywords: tools, comm, org-mode, UART, literate programming, reproducible development
 ;; Homepage: https://github.com/elemb/ob-uart
