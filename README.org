@@ -93,7 +93,7 @@ Basic block:
 7 stars
 #+END_SRC
 
-** RESULTS
+RESULTS:
 : : STAR ( -- ) 42 EMIT ;  ok
 : : STARS ( n -- ) 0 DO STAR LOOP ;  ok
 : 7 stars ******* ok
