@@ -173,6 +173,9 @@
               (when (get-buffer proc-buf)
                 (kill-buffer proc-buf))
               
+              ;; Strip control characters (except newlines and tabs)
+              (setq result (replace-regexp-in-string "[\x00-\x08\x0B-\x1F\x7F]" "" result))
+              
               ;; Decode output if needed
               (when (string= oenc "hex")
                 (setq result 
