@@ -1,125 +1,175 @@
-#+TITLE: ob-uart -- integrate UART communication into org documents
+#+TITLE: ob-uart – Literate UART / serial communication in Org-mode
+#+AUTHOR: (your name / original Andreas Müller + elemb + your improvements)
+#+LANGUAGE: en
 
-* Overview
+* What is this?
 
-ob-uart is a wrapper around ~make-serial-process~ for org babel,
-providing integration of UART communication into org documents.
+ob-uart lets you talk to microcontrollers, sensors, Bus Pirate, or any serial device directly from Org-mode code blocks.
 
-* Purpose
+You write commands (Forth, AT commands, whatever) in =#+BEGIN_SRC uart= blocks → Org sends them over real UART → you get the reply as =#+RESULTS:=.
 
-ob-uart is useful for communication with devices that use a simple,
-command based interface over UART, such as is often the case in
-embedded development.
+Perfect for:
+- Literate embedded development / firmware REPL sessions
+- Documenting hardware experiments
+- Talking to Forth systems (ZeptoForth, Mecrisp-Stellaris, noForth, amforth, etc.)
+- Bus Pirate, Arduinos in serial bridge mode, FTDI adapters, etc.
 
-Using ob-uart allows using org-mode to test and document the
-interface, e.g.:
+* Status 2026
 
-#+BEGIN_SRC uart :exports both
-set_value_portb 3 1
-#+END_SRC
+The original repo[](https://github.com/elemb/ob-uart) seems abandoned for many years.
 
-#+RESULTS:
-: OK
+This fork contains **critical fixes** that make it actually work in modern Emacs / Doom Emacs:
+- proper handling of numeric parameters (:speed, :bytesize, etc.) — Org passes numbers as numbers, not strings
+- symbol → string conversion for header args that are written without quotes
+- removal of control characters from output (^F, ^M, other garbage)
+- cleaner defaults (115200 baud, \n line ending)
+- better process cleanup and timeout handling
 
-#+BEGIN_SRC uart :exports both
-get_adc0_voltage
-#+END_SRC
-
-#+RESULTS:
-: 0.778
+If you find this useful, feel free to fork again and rename to =ob-cereal= or similar.
 
 * Installation
 
-To use ob-uart, add the repository to your load path, load it and
-add it to ~org-babel-load-languages~.
+** Doom Emacs (recommended – this is how it was actually tested)
 
-#+BEGIN_SRC emacs-lisp
-(add-to-list 'load-path "~/path/to/ob-uart/")
+1. In your =~/.doom.d/packages.el= (or =~/doom.d/packages.el=), add:
+
+   #+begin_src emacs-lisp
+   (package! ob-uart
+     :recipe (:host github :repo "YOURUSERNAME/ob-uart" :files ("ob-uart.el")))
+   #+end_src
+
+   (replace YOURUSERNAME with your GitHub name after you fork & push the fixed version)
+
+2. Run in terminal:
+
+   #+begin_src sh
+   doom sync
+   doom build    # optional but recommended after first install
+   #+end_src
+
+3. Restart Emacs completely (not just =doom/reload=).
+
+4. In =~/.doom.d/config.el=, add:
+
+   #+begin_src emacs-lisp
+   (after! org
+     (require 'ob-uart)
+     (org-babel-do-load-languages
+      'org-babel-load-languages
+      '((uart . t)
+        ;; you probably also want your Forth language
+        (forth . t))))
+   #+end_src
+
+5. Run =doom sync= again, restart Emacs.
+
+6. Verify:
+
+   - =M-x eval-expression RET (featurep 'ob-uart) RET= → should return =t=
+   - =M-x eval-expression RET (fboundp 'org-babel-execute:uart) RET= → =t=
+
+** Vanilla Emacs (without Doom)
+
+Add to your init file (~/.emacs.d/init.el or ~/.emacs):
+
+#+begin_src emacs-lisp
+(add-to-list 'load-path "/path/to/your/ob-uart-folder")
+(require 'ob-uart)
 (org-babel-do-load-languages
  'org-babel-load-languages
  '((uart . t)))
+#+end_src
+
+* Quick start – ZeptoForth example (macOS)
+
+Find your port first:
+
+- macOS → usually =/dev/cu.usbmodem31401= or =/dev/cu.usbmodem*=
+- Linux → =/dev/ttyUSB0=, =/dev/ttyACM0=, etc.
+
+Basic block:
+
+#+BEGIN_SRC uart :port /dev/cu.usbmodem31401 :speed 115200 :bytesize 8 :parity none :stopbits 1 :flowcontrol none
+armv6m words-in
 #+END_SRC
 
-* Example
+You should see something like:
 
-ob-uart can also be useful for tools like the [[http://dangerousprototypes.com/docs/Bus_Pirate][Bus Pirate]]. The
-following example shows a temperature readout from an [[https://www.sensirion.com/sht21][SHT21]] humidity &
-temperature sensor.
+#+RESULTS:
+: armv6m words-in
+: ]code               code[               armv6m-instr        armv6m-internal …
+:  ok
 
-- set mode to I²C, 50 kHz
+Common minimal header (copy-paste friendly):
 
+#+BEGIN_SRC uart :port /dev/cu.usbmodem31401 :speed 115200 :parity none :flowcontrol none
+decimal 1 .
+#+END_SRC
+
+* Recommended header args
+
+| Argument      | Typical value              | Meaning / Notes                                 |
+|---------------|----------------------------|-------------------------------------------------|
+| :port         | /dev/cu.usbmodem31401      | Required. Use quotes if name has spaces         |
+| :speed        | 115200                     | Baud rate (number, not string)                  |
+| :bytesize     | 8                          | Usually 8                                       |
+| :parity       | none / odd / even          | Usually none                                    |
+| :stopbits     | 1                          | Usually 1                                       |
+| :flowcontrol  | none / hw / sw             | Usually none (must have value!)                 |
+| :timeout      | 2                          | Seconds to wait for reply                       |
+| :lineend      | \n                         | Sent after body (default)                       |
+| :ienc         | raw / hex                  | Input encoding (rarely needed)                  |
+| :oenc         | raw / hex / HEX            | Output decoding (rarely needed)                 |
+
+Important: always give =:flowcontrol= a value (usually =none=). Leaving it blank causes parsing bugs.
+
+* Troubleshooting / Gotchas
+
+- **Still getting =wrong-type-argument: stringp, 115200= ?**
+  - Old byte-compiled version is cached.
+  - Fix: =rm -rf ~/.emacs.d/.local/straight/build-*/ob-uart= then =doom sync= again + full Emacs restart.
+
+- **No output or garbage (^F ^M etc.)**
+  - The current version strips most control chars automatically.
+  - If you still see junk → enable debug: =(setq ob-uart-debug t)= and look at =*Messages*=.
+
+- **Port not found**
+  - macOS: =ls /dev/cu.*=
+  - Linux: =ls /dev/ttyUSB* /dev/ttyACM*=
+  - Use quotes if path has special characters.
+
+- **Doom sync does nothing**
+  - Make sure the repo URL in packages.el is correct and public (or you have auth set up).
+
+* Bus Pirate example (still useful)
+
+(kept from original README – works with the fixed version)
+
+- set mode to I²C, 50 kHz
   #+BEGIN_SRC uart :port /dev/buspirate :speed 115200 :exports both
   m 4 2
   #+END_SRC
 
-  #+RESULTS:
-  : m 4 2
-  : I2C (mod spd)=( 0 1 )
-  : Ready
-  : I2C>
-
-- enable power supply and pull-up resistors
-
-  #+BEGIN_SRC uart :port /dev/buspirate :speed 115200 :exports both
+- enable power & pull-ups
+  #+BEGIN_SRC uart :port /dev/buspirate :speed 115200
   WP
   #+END_SRC
 
-  #+RESULTS:
-  : WP
-  : Power supplies ON
-  : Pull-up resistors ON
-  : I2C>
+- etc. (see original examples for SHT21 readout)
 
-- scan for devices
+* Why literate Forth + UART is powerful
 
-  #+BEGIN_SRC uart :port /dev/buspirate :speed 115200 :exports both
-  (1)
-  #+END_SRC
+You can now:
 
-  #+RESULTS:
-  : (1)
-  : Searching I2C address space. Found devices at:
-  : 0x80(0x40 W) 0x81(0x40 R)
-  :
-  : I2C>
+- Keep command sequences + explanations + results in one document
+- Tangle to .fs / .forth files if needed
+- Use =:noweb= to compose definitions across blocks
+- Version control your entire hardware conversation
 
-- send command to trigger temperature measurement
+Enjoy — and happy hacking!
 
-  #+BEGIN_SRC uart :port /dev/buspirate :speed 115200 :exports both
-  [0x80 0b11110011 %]
-  #+END_SRC
+* License
 
-  #+RESULTS:
-  : [0x80 0b11110011 %]
-  : I2C START BIT
-  : WRITE: 0x80 ACK
-  : WRITE: 0xF3 ACK
-  : DELAY 1ms
-  : I2C STOP BIT
-  : I2C>
+Same as original: GPLv3+
 
-- get result data
-
-  #+NAME: sht21_data
-  #+BEGIN_SRC uart :port /dev/buspirate :speed 115200 :cache yes :exports both
-  [0x81 r:3]
-  #+END_SRC
-
-  #+RESULTS[43d384c278126101882a82423eae8f83e4e43d62]: sht21_data
-  : [0x81 r:3]
-  : I2C START BIT
-  : WRITE: 0x81 ACK
-  : READ: 0x64  ACK 0x74  ACK 0xEA
-  : NACK
-  : I2C STOP BIT
-  : I2C>
-
-- calculate temperature
-
-  #+BEGIN_SRC python :var data=sht21_data :results output :exports both
-  bytes = [int(x, 16) for x in data.split("\n")[3][5:].split(" ACK ")]
-  print("%.1f" % (-46.85 + 175.72 * (bytes[0] * 256 + bytes[1]) / 2**16))
-  #+END_SRC
-
-  #+RESULTS:
-  : 22.1
+;;; ob-uart.el ends here
